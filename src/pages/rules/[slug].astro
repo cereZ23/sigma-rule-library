@@ -128,8 +128,6 @@ const jsonLd = {
         <DetectionViewer detection={rule.detection} ruleType={rule.ruleType} />
       </section>
 
-      <YamlViewer rawYaml={rule.rawYaml} fileName={fileName} />
-
       <section aria-labelledby="fp-heading">
         <h2 id="fp-heading" class="mb-2 text-lg font-semibold text-body">False positives</h2>
         {
@@ -280,5 +278,10 @@ const jsonLd = {
         )
       }
     </aside>
+  </div>
+
+  {/* Full page width: the authored ~100-column YAML fits without wrapping or clipping */}
+  <div class="mt-10">
+    <YamlViewer rawYaml={rule.rawYaml} fileName={fileName} />
   </div>
 </BaseLayout>

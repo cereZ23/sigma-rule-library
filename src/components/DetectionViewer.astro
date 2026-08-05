@@ -1,0 +1,88 @@
+---
+/**
+ * Structured view of the detection logic (SPEC §8): one labelled block per
+ * detection entry (selections, filters, ...), with the condition rendered
+ * prominently. Values are re-serialized as YAML for readability; the exact
+ * original file is always available in the Raw YAML section.
+ */
+import { stringify } from 'yaml';
+import { Code } from 'astro:components';
+
+interface Props {
+  detection: unknown;
+  ruleType: string;
+}
+const { detection, ruleType } = Astro.props;
+
+const entries: { key: string; yaml: string }[] = [];
+let condition: string | undefined;
+let timeframe: string | undefined;
+
+if (detection && typeof detection === 'object' && !Array.isArray(detection)) {
+  for (const [key, value] of Object.entries(detection as Record<string, unknown>)) {
+    if (key === 'condition') {
+      condition = Array.isArray(value) ? value.map(String).join(' | ') : String(value);
+    } else if (key === 'timeframe') {
+      timeframe = String(value);
+    } else {
+      let rendered: string;
+      try {
+        rendered = stringify(value, { lineWidth: 0 }).trimEnd();
+      } catch {
+        rendered = JSON.stringify(value, null, 2);
+      }
+      entries.push({ key, yaml: rendered });
+    }
+  }
+}
+
+const shikiThemes = { light: 'github-light', dark: 'github-dark' } as const;
+---
+
+<div class="space-y-4">
+  {
+    ruleType === 'correlation' && (
+      <p class="rounded-md border border-edge bg-surface-muted px-3 py-2 text-sm text-body-muted">
+        This is a Sigma correlation rule: the block below describes how related detections are
+        correlated rather than a single-event detection.
+      </p>
+    )
+  }
+  {
+    entries.map(({ key, yaml }) => (
+      <section>
+        <h4 class="mb-1.5 font-mono text-sm font-semibold text-body">{key}</h4>
+        <div class="yaml-viewer overflow-hidden rounded-lg border border-edge">
+          <Code code={yaml} lang="yaml" themes={shikiThemes} />
+        </div>
+      </section>
+    ))
+  }
+  {
+    condition && (
+      <section>
+        <h4 class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-body-subtle">Condition</h4>
+        <code class="block overflow-x-auto rounded-lg border border-edge bg-surface-muted px-3 py-2 font-mono text-sm text-body">
+          {condition}
+        </code>
+      </section>
+    )
+  }
+  {
+    timeframe && (
+      <section>
+        <h4 class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-body-subtle">Timeframe</h4>
+        <code class="inline-block rounded-lg border border-edge bg-surface-muted px-3 py-1 font-mono text-sm text-body">
+          {timeframe}
+        </code>
+      </section>
+    )
+  }
+  {
+    entries.length === 0 && !condition && (
+      <p class="text-sm text-body-subtle">
+        No structured detection block found — see the raw YAML below.
+      </p>
+    )
+  }
+</div>

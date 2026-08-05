@@ -1,0 +1,32 @@
+---
+import Badge from './Badge.astro';
+import type { SigmaLogsource } from '../lib/sigma';
+
+interface Props {
+  logsource: SigmaLogsource;
+}
+const { logsource } = Astro.props;
+const entries = [
+  ['product', logsource.product],
+  ['service', logsource.service],
+  ['category', logsource.category],
+] as const;
+---
+
+<div class="space-y-2">
+  <div class="flex flex-wrap gap-1.5">
+    {
+      entries
+        .filter(([, value]) => value)
+        .map(([key, value]) => <Badge label={`${key}: ${value}`} kind="accent" />)
+    }
+    {entries.every(([, value]) => !value) && <span class="text-sm text-body-subtle">Not specified</span>}
+  </div>
+  {
+    logsource.definition && (
+      <p class="text-sm text-body-muted">
+        <span class="font-medium text-body">Definition:</span> {logsource.definition}
+      </p>
+    )
+  }
+</div>

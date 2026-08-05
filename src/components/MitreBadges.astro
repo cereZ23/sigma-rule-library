@@ -1,0 +1,66 @@
+---
+import { mitreTechniqueUrl, tacticDisplayName } from '../lib/mitre';
+import { href } from '../lib/site';
+import { libraryPath } from '../lib/urls';
+
+interface Props {
+  tactics: string[];
+  techniques: string[];
+  subTechniques: string[];
+}
+const { tactics, techniques, subTechniques } = Astro.props;
+const baseTechniques = techniques.filter((t) => !t.includes('.'));
+const hasAny = tactics.length > 0 || techniques.length > 0 || subTechniques.length > 0;
+---
+
+{!hasAny && <p class="text-sm text-body-subtle">No ATT&amp;CK mapping on this rule.</p>}
+
+{
+  tactics.length > 0 && (
+    <div class="space-y-1.5">
+      <h4 class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Tactics</h4>
+      <div class="flex flex-wrap gap-1.5">
+        {tactics.map((tactic) => (
+          <a
+            href={href(libraryPath({ tactic }))}
+            class="inline-flex items-center rounded-full border border-edge bg-accent-soft px-2 py-0.5 text-xs font-medium text-link hover:border-edge-strong"
+            title={`Browse rules for tactic ${tacticDisplayName(tactic)}`}
+          >
+            {tacticDisplayName(tactic)}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+{
+  (baseTechniques.length > 0 || subTechniques.length > 0) && (
+    <div class="mt-3 space-y-1.5">
+      <h4 class="text-xs font-semibold uppercase tracking-wide text-body-subtle">
+        Techniques &amp; sub-techniques
+      </h4>
+      <ul class="space-y-1">
+        {[...baseTechniques, ...subTechniques].sort().map((id) => (
+          <li class="flex flex-wrap items-center gap-2 text-sm">
+            <a
+              href={mitreTechniqueUrl(id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-mono text-link underline decoration-edge-strong underline-offset-2 hover:decoration-current"
+              title={`${id} on attack.mitre.org`}
+            >
+              {id}
+            </a>
+            <a
+              href={href(libraryPath({ technique: id }))}
+              class="text-xs text-body-subtle hover:text-link hover:underline"
+            >
+              browse rules
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

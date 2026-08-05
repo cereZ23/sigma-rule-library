@@ -1,0 +1,127 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import RuleCard from '../components/RuleCard.astro';
+import stats from '../generated/stats.json';
+import { SITE_NAME, canonical, href } from '../lib/site';
+import { libraryPath } from '../lib/urls';
+
+const description =
+  'Explore, search and understand community-maintained Sigma detection rules from the SigmaHQ repository. Filter by platform, log source, severity and MITRE ATT&CK.';
+
+const counters = [
+  { label: 'Sigma rules', value: stats.totalRules.toLocaleString('en-US') },
+  { label: 'Products', value: String(stats.distinctProducts) },
+  { label: 'ATT&CK techniques', value: String(stats.distinctTechniques) },
+  { label: 'Last update', value: stats.syncedAt.slice(0, 10) },
+];
+
+const topCategories = Object.entries(stats.byCategory as Record<string, number>)
+  .filter(([name]) => name !== 'unknown')
+  .slice(0, 8);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: canonical('/'),
+  description,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: { '@type': 'EntryPoint', urlTemplate: `${canonical('/library/')}?q={search_term_string}` },
+    'query-input': 'required name=search_term_string',
+  },
+};
+---
+
+<BaseLayout title="Home" description={description} path="/" jsonLd={jsonLd}>
+  <section class="py-8 text-center sm:py-14">
+    <h1 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-body sm:text-4xl">
+      Explore, search and understand Sigma detection rules
+    </h1>
+    <p class="mx-auto mt-4 max-w-2xl text-body-muted">
+      A fast, browsable library of community-maintained detection rules from the
+      <a
+        href="https://github.com/SigmaHQ/sigma"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-link underline decoration-edge-strong underline-offset-2 hover:decoration-current"
+        >SigmaHQ repository</a
+      > — searchable by platform, log source, severity and MITRE ATT&amp;CK.
+    </p>
+
+    <form action={href('/library/')} method="get" role="search" class="mx-auto mt-8 flex max-w-xl gap-2">
+      <label for="home-search" class="sr-only">Search Sigma rules</label>
+      <input
+        id="home-search"
+        type="search"
+        name="q"
+        placeholder="Search rules, e.g. powershell, T1059, lsass…"
+        class="w-full rounded-lg border border-edge bg-surface-elevated px-4 py-2.5 text-body placeholder:text-body-subtle"
+      />
+      <button
+        type="submit"
+        class="rounded-lg bg-accent px-5 py-2.5 font-medium text-accent-fg hover:opacity-90"
+      >
+        Search
+      </button>
+    </form>
+
+    <dl class="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
+      {
+        counters.map((counter) => (
+          <div class="rounded-lg border border-edge bg-surface-elevated p-4">
+            <dd class="text-2xl font-bold text-body">{counter.value}</dd>
+            <dt class="mt-1 text-xs text-body-subtle">{counter.label}</dt>
+          </div>
+        ))
+      }
+    </dl>
+
+    <div class="mt-8">
+      <a
+        href={href('/library/')}
+        class="inline-flex items-center gap-2 rounded-lg border border-edge bg-surface-elevated px-5 py-2.5 font-medium text-body hover:bg-surface-muted"
+      >
+        Browse the full library →
+      </a>
+    </div>
+  </section>
+
+  {
+    topCategories.length > 0 && (
+      <section aria-labelledby="categories-heading" class="py-8">
+        <h2 id="categories-heading" class="mb-4 text-xl font-semibold text-body">
+          Main logsource categories
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          {topCategories.map(([category, count]) => (
+            <a
+              href={href(libraryPath({ category }))}
+              class="inline-flex items-center gap-2 rounded-full border border-edge bg-surface-elevated px-4 py-1.5 text-sm text-body hover:border-edge-strong"
+            >
+              <span class="font-mono">{category}</span>
+              <span class="text-xs text-body-subtle">{count}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <section aria-labelledby="recent-heading" class="py-8">
+    <h2 id="recent-heading" class="mb-4 text-xl font-semibold text-body">Recently updated rules</h2>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        stats.recentlyModified.map((rule) => (
+          <RuleCard
+            slug={rule.slug}
+            title={rule.title}
+            level={rule.level}
+            product={rule.product ?? undefined}
+            note={rule.modified ? `modified ${rule.modified}` : undefined}
+          />
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

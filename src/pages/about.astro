@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import metadata from '../generated/source-metadata.json';
+import stats from '../generated/stats.json';
+import { GITHUB_REPOSITORY, SITE_NAME } from '../lib/site';
+
+const description = `What ${SITE_NAME} is, where its data comes from, and how rules are licensed and attributed.`;
+---
+
+<BaseLayout title="About" description={description} path="/about/">
+  <div class="prose-custom mx-auto max-w-3xl space-y-8">
+    <section>
+      <h1 class="text-3xl font-bold text-body">About {SITE_NAME}</h1>
+      <p class="mt-4 text-body-muted">
+        {SITE_NAME} is an independent community interface for exploring rules from the
+        <a
+          href="https://github.com/SigmaHQ/sigma"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-link underline decoration-edge-strong underline-offset-2">SigmaHQ repository</a
+        >. It is <strong class="text-body">not affiliated with or endorsed by SigmaHQ</strong>. The site is
+        fully static: the catalog is rebuilt from the upstream repository on a schedule, and no backend,
+        account or tracking is involved.
+      </p>
+    </section>
+
+    <section aria-labelledby="source-heading">
+      <h2 id="source-heading" class="text-xl font-semibold text-body">Data source</h2>
+      <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+        <div class="rounded-lg border border-edge bg-surface-elevated p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Repository</dt>
+          <dd class="mt-1">
+            <a
+              href={`https://github.com/${metadata.repo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-mono text-link hover:underline">{metadata.repo}</a
+            >
+            <span class="text-body-subtle">(branch {metadata.branch})</span>
+          </dd>
+        </div>
+        <div class="rounded-lg border border-edge bg-surface-elevated p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Source commit</dt>
+          <dd class="mt-1">
+            <a
+              href={`https://github.com/${metadata.repo}/tree/${metadata.commit}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="break-all font-mono text-link hover:underline">{metadata.commit.slice(0, 12)}</a
+            >
+          </dd>
+        </div>
+        <div class="rounded-lg border border-edge bg-surface-elevated p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Last sync</dt>
+          <dd class="mt-1 font-mono">{metadata.syncedAt.slice(0, 19).replace('T', ' ')} UTC</dd>
+        </div>
+        <div class="rounded-lg border border-edge bg-surface-elevated p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Imported rules</dt>
+          <dd class="mt-1 font-mono">
+            {stats.totalRules.toLocaleString('en-US')}
+            <span class="text-body-subtle">({stats.failedFiles} files failed to import)</span>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="license-heading">
+      <h2 id="license-heading" class="text-xl font-semibold text-body">Licenses and attribution</h2>
+      <ul class="mt-3 list-disc space-y-2 pl-5 text-body-muted">
+        <li>
+          Sigma rules belong to their respective authors and are distributed under the
+          <a
+            href={`https://github.com/${metadata.repo}/blob/${metadata.commit}/LICENSE.Detection.Rules.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-link underline decoration-edge-strong underline-offset-2">Detection Rule License</a
+          > of the SigmaHQ repository. Individual rules may declare their own <code>license</code> field,
+          shown on the rule page.
+        </li>
+        <li>
+          The code of this website is licensed under the
+          <a
+            href={`https://github.com/${GITHUB_REPOSITORY}/blob/main/LICENSE`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-link underline decoration-edge-strong underline-offset-2">MIT License</a
+          > and lives at
+          <a
+            href={`https://github.com/${GITHUB_REPOSITORY}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-mono text-link underline decoration-edge-strong underline-offset-2"
+            >{GITHUB_REPOSITORY}</a
+          >.
+        </li>
+        <li>
+          MITRE ATT&amp;CK® is a registered trademark of The MITRE Corporation. ATT&amp;CK technique names
+          on the coverage page come from the public
+          <a
+            href="https://github.com/mitre-attack/attack-stix-data"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-link underline decoration-edge-strong underline-offset-2">attack-stix-data</a
+          > dataset.
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="how-heading">
+      <h2 id="how-heading" class="text-xl font-semibold text-body">How it works</h2>
+      <p class="mt-3 text-body-muted">
+        At build time the site shallow-clones the SigmaHQ repository, parses every rule file, and
+        generates a static page for each rule plus a compact client-side search index. A scheduled
+        GitHub Actions workflow checks the upstream repository daily and republishes the site when new
+        commits land. Rule YAML is treated strictly as untrusted data: it is never executed, and it is
+        always rendered escaped.
+      </p>
+    </section>
+  </div>
+</BaseLayout>

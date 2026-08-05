@@ -1,0 +1,278 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Badge from '../../components/Badge.astro';
+import CopyButton from '../../components/CopyButton.astro';
+import DetectionViewer from '../../components/DetectionViewer.astro';
+import LogsourceBadges from '../../components/LogsourceBadges.astro';
+import MitreBadges from '../../components/MitreBadges.astro';
+import RuleCard from '../../components/RuleCard.astro';
+import RuleMetadata from '../../components/RuleMetadata.astro';
+import YamlViewer from '../../components/YamlViewer.astro';
+import { isAttackTag } from '../../lib/mitre';
+import { safeReferences } from '../../lib/security';
+import type { SigmaRule } from '../../lib/sigma';
+import { buildSimilarityIndex, similarRules, type SimilarRule } from '../../lib/similar';
+import { SITE_NAME, canonical, href } from '../../lib/site';
+import { rulePath } from '../../lib/urls';
+
+export async function getStaticPaths() {
+  const { default: rules } = (await import('../../generated/rules.json')) as {
+    default: SigmaRule[];
+  };
+  const index = buildSimilarityIndex(rules);
+  const slugByRuleId = new Map<string, string>();
+  for (const rule of rules) {
+    if (rule.id && !slugByRuleId.has(rule.id)) slugByRuleId.set(rule.id, rule.slug);
+  }
+  return rules.map((rule) => ({
+    params: { slug: rule.slug },
+    props: {
+      rule,
+      similar: similarRules(rule, index),
+      relatedResolved: rule.related.map((rel) => ({
+        ...rel,
+        slug: slugByRuleId.get(rel.id) ?? null,
+      })),
+    },
+  }));
+}
+
+interface Props {
+  rule: SigmaRule;
+  similar: SimilarRule[];
+  relatedResolved: { id: string; type: string; slug: string | null }[];
+}
+
+const { rule, similar, relatedResolved } = Astro.props;
+const path = rulePath(rule.slug);
+const description =
+  rule.description?.replace(/\s+/g, ' ').trim().slice(0, 300) ||
+  `Sigma detection rule "${rule.title}" from the SigmaHQ repository.`;
+const references = safeReferences(rule.references);
+const otherTags = rule.tags.filter((tag) => !isAttackTag(tag));
+const fileName = rule.sourcePath.split('/').pop() ?? 'sigma-rule.yml';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: rule.title,
+  description,
+  url: canonical(path),
+  ...(rule.author.length > 0 && { author: rule.author.map((name) => ({ '@type': 'Person', name })) }),
+  ...(rule.date && { dateCreated: rule.date }),
+  ...(rule.modified && { dateModified: rule.modified }),
+  isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: canonical('/') },
+};
+---
+
+<BaseLayout title={rule.title} description={description} path={path} ogType="article" jsonLd={jsonLd}>
+  <nav aria-label="Breadcrumb" class="mb-4 text-sm text-body-subtle">
+    <ol class="flex flex-wrap items-center gap-1.5">
+      <li><a href={href('/')} class="hover:text-link hover:underline">Home</a></li>
+      <li aria-hidden="true">/</li>
+      <li><a href={href('/library/')} class="hover:text-link hover:underline">Library</a></li>
+      <li aria-hidden="true">/</li>
+      <li aria-current="page" class="max-w-[24rem] truncate text-body-muted">{rule.title}</li>
+    </ol>
+  </nav>
+
+  <header class="mb-6">
+    <div class="flex flex-wrap items-center gap-2">
+      <Badge label={`level: ${rule.level ?? 'unknown'}`} kind="level" value={rule.level ?? 'unknown'} />
+      <Badge
+        label={`status: ${rule.status ?? 'unknown'}`}
+        kind="status"
+        value={rule.status ?? 'unknown'}
+      />
+      <Badge label={rule.ruleType} />
+      <Badge label={rule.repositorySection} />
+    </div>
+    <h1 class="mt-3 text-2xl font-bold text-body sm:text-3xl">{rule.title}</h1>
+    {rule.description && <p class="mt-2 max-w-3xl text-body-muted">{rule.description}</p>}
+    <p class="mt-2 text-sm text-body-subtle">
+      {rule.author.length > 0 && <span>By {rule.author.join(', ')}</span>}
+      {rule.date && <span> · created {rule.date}</span>}
+      {rule.modified && <span> · modified {rule.modified}</span>}
+    </p>
+
+    <div class="mt-4 flex flex-wrap gap-2">
+      <CopyButton label="Copy YAML" sourceSelector="#raw-yaml-code" />
+      <button
+        type="button"
+        data-download-yaml
+        data-download-name={fileName}
+        class="inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-muted"
+      >
+        Download YAML
+      </button>
+      <a
+        href={rule.githubUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-muted"
+        >View on GitHub</a
+      >
+      <a
+        href={rule.rawUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-muted"
+        >Open raw file</a
+      >
+      <button
+        type="button"
+        data-share-button
+        data-share-title={`${rule.title} — ${SITE_NAME}`}
+        class="inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-muted"
+      >
+        <span data-share-label>Share</span>
+      </button>
+      {rule.id && <CopyButton label="Copy rule ID" text={rule.id} />}
+    </div>
+  </header>
+
+  <div class="grid gap-8 lg:grid-cols-[1fr_20rem]">
+    <div class="min-w-0 space-y-8">
+      <section aria-labelledby="detection-heading">
+        <h2 id="detection-heading" class="mb-3 text-lg font-semibold text-body">Detection logic</h2>
+        <DetectionViewer detection={rule.detection} ruleType={rule.ruleType} />
+      </section>
+
+      <YamlViewer rawYaml={rule.rawYaml} fileName={fileName} />
+
+      <section aria-labelledby="fp-heading">
+        <h2 id="fp-heading" class="mb-2 text-lg font-semibold text-body">False positives</h2>
+        {
+          rule.falsePositives.length > 0 ? (
+            <ul class="list-disc space-y-1 pl-5 text-sm text-body-muted">
+              {rule.falsePositives.map((fp) => (
+                <li>{fp}</li>
+              ))}
+            </ul>
+          ) : (
+            <p class="text-sm text-body-subtle">No false positives documented in this rule.</p>
+          )
+        }
+      </section>
+
+      {
+        references.length > 0 && (
+          <section aria-labelledby="refs-heading">
+            <h2 id="refs-heading" class="mb-2 text-lg font-semibold text-body">References</h2>
+            <ul class="list-disc space-y-1 pl-5 text-sm">
+              {references.map((ref) =>
+                ref.safe ? (
+                  <li>
+                    <a
+                      href={ref.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="break-all text-link underline decoration-edge-strong underline-offset-2 hover:decoration-current"
+                    >
+                      {ref.url}
+                    </a>
+                  </li>
+                ) : (
+                  <li>
+                    <code class="break-all text-body-muted">{ref.url}</code>
+                  </li>
+                ),
+              )}
+            </ul>
+          </section>
+        )
+      }
+
+      {
+        relatedResolved.length > 0 && (
+          <section aria-labelledby="related-heading">
+            <h2 id="related-heading" class="mb-2 text-lg font-semibold text-body">Related rules</h2>
+            <ul class="space-y-1.5 text-sm">
+              {relatedResolved.map((rel) => (
+                <li class="flex flex-wrap items-center gap-2">
+                  <Badge label={rel.type} />
+                  {rel.slug ? (
+                    <a
+                      href={href(rulePath(rel.slug))}
+                      class="font-mono text-link underline decoration-edge-strong underline-offset-2 hover:decoration-current"
+                    >
+                      {rel.id}
+                    </a>
+                  ) : (
+                    <span class="font-mono text-body-muted" title="Not present in this catalog">
+                      {rel.id}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+
+      {
+        similar.length > 0 && (
+          <section aria-labelledby="similar-heading">
+            <h2 id="similar-heading" class="mb-3 text-lg font-semibold text-body">Similar rules</h2>
+            <div class="grid gap-3 sm:grid-cols-2">
+              {similar.map((sim) => (
+                <RuleCard
+                  slug={sim.slug}
+                  title={sim.title}
+                  level={sim.level}
+                  product={sim.product}
+                  note={sim.reason}
+                />
+              ))}
+            </div>
+          </section>
+        )
+      }
+    </div>
+
+    <aside class="space-y-6 lg:border-l lg:border-edge lg:pl-6">
+      <section aria-labelledby="meta-heading">
+        <h2 id="meta-heading" class="mb-3 text-sm font-semibold uppercase tracking-wide text-body-subtle">
+          Metadata
+        </h2>
+        <RuleMetadata rule={rule} />
+      </section>
+      <section aria-labelledby="logsource-heading">
+        <h2
+          id="logsource-heading"
+          class="mb-3 text-sm font-semibold uppercase tracking-wide text-body-subtle"
+        >
+          Log source
+        </h2>
+        <LogsourceBadges logsource={rule.logsource} />
+      </section>
+      <section aria-labelledby="mitre-heading">
+        <h2 id="mitre-heading" class="mb-3 text-sm font-semibold uppercase tracking-wide text-body-subtle">
+          MITRE ATT&amp;CK
+        </h2>
+        <MitreBadges
+          tactics={rule.mitreTactics}
+          techniques={rule.mitreTechniques}
+          subTechniques={rule.mitreSubTechniques}
+        />
+      </section>
+      {
+        otherTags.length > 0 && (
+          <section aria-labelledby="tags-heading">
+            <h2
+              id="tags-heading"
+              class="mb-3 text-sm font-semibold uppercase tracking-wide text-body-subtle"
+            >
+              Other tags
+            </h2>
+            <div class="flex flex-wrap gap-1.5">
+              {otherTags.map((tag) => (
+                <Badge label={tag} />
+              ))}
+            </div>
+          </section>
+        )
+      }
+    </aside>
+  </div>
+</BaseLayout>

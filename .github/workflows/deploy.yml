@@ -1,0 +1,108 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # PUBLIC_* can be overridden with repository variables; sensible defaults
+      # are derived from the repository name (user pages get an empty base path).
+      - name: Resolve Pages configuration
+        env:
+          SITE_URL_OVERRIDE: ${{ vars.PUBLIC_SITE_URL }}
+          BASE_PATH_OVERRIDE: ${{ vars.PUBLIC_BASE_PATH }}
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          SITE_URL="${SITE_URL_OVERRIDE:-https://${GITHUB_REPOSITORY_OWNER}.github.io}"
+          if [ -n "$BASE_PATH_OVERRIDE" ]; then
+            BASE_PATH="$BASE_PATH_OVERRIDE"
+          elif [ "$REPO_NAME" = "${GITHUB_REPOSITORY_OWNER}.github.io" ]; then
+            BASE_PATH=""
+          else
+            BASE_PATH="/$REPO_NAME"
+          fi
+          {
+            echo "PUBLIC_SITE_URL=$SITE_URL"
+            echo "PUBLIC_BASE_PATH=$BASE_PATH"
+            echo "PUBLIC_GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
+          } >> "$GITHUB_ENV"
+
+      - name: Fetch and parse SigmaHQ rules
+        run: npm run data
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Build site
+        run: npm run build
+
+      - name: Import summary
+        if: always()
+        run: |
+          if [ -f src/generated/stats.json ]; then
+            {
+              echo "## Sigma catalog import"
+              echo ""
+              echo "| Metric | Value |"
+              echo "| --- | --- |"
+              jq -r '"| Imported rules | \(.totalRules) |", "| Source commit | `\(.sourceCommit[0:12])` |", "| Files failed | \(.failedFiles) |"' src/generated/stats.json
+              jq -r '"| Duplicate IDs | \(.duplicateIds | length) |", "| Slug collisions | \(.duplicateSlugs | length) |", "| Parse errors | \(.errors | length) |"' src/generated/import-errors.json
+            } >> "$GITHUB_STEP_SUMMARY"
+            if [ "$(jq '.errors | length' src/generated/import-errors.json)" -gt 0 ]; then
+              {
+                echo ""
+                echo "<details><summary>First parse errors</summary>"
+                echo ""
+                jq -r '.errors[:20][] | "- `\(.file)`: \(.reason)"' src/generated/import-errors.json
+                echo ""
+                echo "</details>"
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

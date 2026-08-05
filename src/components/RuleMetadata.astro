@@ -1,0 +1,46 @@
+---
+import type { SigmaRule } from '../lib/sigma';
+import CopyButton from './CopyButton.astro';
+
+interface Props {
+  rule: SigmaRule;
+}
+const { rule } = Astro.props;
+
+const rows: { label: string; value: string | undefined; mono?: boolean }[] = [
+  { label: 'Author', value: rule.author.join(', ') || undefined },
+  { label: 'Created', value: rule.date },
+  { label: 'Modified', value: rule.modified },
+  { label: 'Rule type', value: rule.ruleType },
+  { label: 'Section', value: rule.repositorySection },
+  { label: 'License', value: rule.license },
+  { label: 'Scope', value: rule.scope?.join(', ') || undefined },
+  { label: 'Source path', value: rule.sourcePath, mono: true },
+];
+---
+
+<dl class="space-y-3 text-sm">
+  {
+    rule.id && (
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Sigma ID</dt>
+        <dd class="mt-1 flex flex-wrap items-center gap-2">
+          <code class="break-all font-mono text-xs text-body">{rule.id}</code>
+          <CopyButton label="Copy ID" text={rule.id} class="!px-2 !py-1 !text-xs" />
+        </dd>
+      </div>
+    )
+  }
+  {
+    rows
+      .filter((row) => row.value)
+      .map((row) => (
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">{row.label}</dt>
+          <dd class:list={['mt-0.5 break-words text-body', row.mono && 'font-mono text-xs']}>
+            {row.value}
+          </dd>
+        </div>
+      ))
+  }
+</dl>

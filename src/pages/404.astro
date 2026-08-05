@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { href } from '../lib/site';
+---
+
+<BaseLayout title="Page not found" description="The page you were looking for does not exist." path="/404">
+  <div class="py-20 text-center">
+    <p class="font-mono text-6xl font-bold text-body-subtle">404</p>
+    <h1 class="mt-4 text-2xl font-semibold text-body">Page not found</h1>
+    <p class="mt-2 text-body-muted">
+      The rule or page you were looking for does not exist — it may have been renamed or removed upstream.
+    </p>
+    <div class="mt-6 flex justify-center gap-3">
+      <a
+        href={href('/library/')}
+        class="rounded-lg bg-accent px-5 py-2.5 font-medium text-accent-fg hover:opacity-90"
+        >Search the library</a
+      >
+      <a
+        href={href('/')}
+        class="rounded-lg border border-edge bg-surface-elevated px-5 py-2.5 font-medium text-body hover:bg-surface-muted"
+        >Go home</a
+      >
+    </div>
+  </div>
+</BaseLayout>

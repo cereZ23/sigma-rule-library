@@ -1,0 +1,32 @@
+---
+/** Compact server-rendered rule card (used for similar/recent rule lists). */
+import Badge from './Badge.astro';
+import { href } from '../lib/site';
+import { rulePath } from '../lib/urls';
+
+interface Props {
+  slug: string;
+  title: string;
+  description?: string;
+  level?: string;
+  product?: string;
+  note?: string;
+}
+const { slug, title, description, level, product, note } = Astro.props;
+---
+
+<a
+  href={href(rulePath(slug))}
+  class="block rounded-lg border border-edge bg-surface-elevated p-4 transition-colors hover:border-edge-strong"
+>
+  <div class="flex items-start justify-between gap-3">
+    <h3 class="font-medium text-body">{title}</h3>
+    {level && <Badge label={level} kind="level" />}
+  </div>
+  {description && <p class="mt-1 line-clamp-2 text-sm text-body-muted">{description}</p>}
+  <p class="mt-2 text-xs text-body-subtle">
+    {product && <span class="font-mono">{product}</span>}
+    {product && note && <span> · </span>}
+    {note && <span>{note}</span>}
+  </p>
+</a>

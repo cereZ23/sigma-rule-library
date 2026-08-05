@@ -1,0 +1,70 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_NAME, canonical, href } from '../lib/site';
+
+interface Props {
+  /** Page title without the site suffix. */
+  title: string;
+  description: string;
+  /** Site-relative path of this page, e.g. "/library/". Used for canonical + og:url. */
+  path: string;
+  ogType?: string;
+  /** Optional JSON-LD structured data object. */
+  jsonLd?: Record<string, unknown>;
+}
+
+const { title, description, path, ogType = 'website', jsonLd } = Astro.props;
+const fullTitle = path === '/' ? `${SITE_NAME} — Sigma detection rules explorer` : `${title} — ${SITE_NAME}`;
+const canonicalHref = canonical(path);
+
+// GitHub Pages cannot set response headers, so the CSP ships as a meta tag.
+// style-src needs 'unsafe-inline' for Shiki inline color spans and Astro scoped styles.
+const csp = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalHref} />
+    <link rel="icon" type="image/svg+xml" href={href('/favicon.svg')} />
+    <link rel="sitemap" href={href('/sitemap-index.xml')} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalHref} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <script src={href('/theme-init.js')} is:inline></script>
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+  </head>
+  <body class="flex min-h-screen flex-col">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <Header />
+    <main id="main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      import '../scripts/site-interactions';
+    </script>
+  </body>
+</html>

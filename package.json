@@ -1,0 +1,42 @@
+{
+  "name": "sigma-rule-library",
+  "version": "0.1.0",
+  "description": "An independent, static web interface for exploring community-maintained Sigma detection rules from the SigmaHQ repository.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "data": "npm run data:fetch && npm run data:parse && npm run data:stats && npm run data:index && npm run data:validate",
+    "data:fetch": "tsx scripts/fetch-sigma.ts",
+    "data:parse": "tsx scripts/parse-sigma.ts",
+    "data:stats": "tsx scripts/generate-stats.ts",
+    "data:index": "tsx scripts/build-search-index.ts",
+    "data:validate": "tsx scripts/validate-generated-data.ts",
+    "predev": "tsx scripts/ensure-data.ts",
+    "dev": "astro dev",
+    "prebuild": "tsx scripts/ensure-data.ts",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/sitemap": "^3.7.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.1.6",
+    "shiki": "^4.4.2",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.8",
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "vitest": "^4.1.10"
+  }
+}

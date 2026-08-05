@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import matrix from '../data/attack-matrix.json';
+import { href } from '../lib/site';
+import { libraryPath } from '../lib/urls';
+import type { SigmaRule } from '../lib/sigma';
+
+const { default: rules } = (await import('../generated/rules.json')) as { default: SigmaRule[] };
+
+// Rule counts per technique/sub-technique ID
+const counts = new Map<string, number>();
+for (const rule of rules) {
+  for (const id of new Set([...rule.mitreTechniques, ...rule.mitreSubTechniques])) {
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+}
+
+const knownIds = new Set<string>();
+for (const tactic of matrix.tactics) {
+  for (const technique of tactic.techniques) {
+    knownIds.add(technique.id);
+    for (const sub of technique.subTechniques) knownIds.add(sub.id);
+  }
+}
+const unknownReferenced = [...counts.keys()].filter((id) => !knownIds.has(id)).sort();
+
+const coveredTechniques = [...knownIds].filter((id) => !id.includes('.') && (counts.get(id) ?? 0) > 0)
+  .length;
+const totalTechniques = [...knownIds].filter((id) => !id.includes('.')).length;
+
+// 0 rules -> muted, 1 rule -> weak coverage, 2+ -> covered. Text always spells it out.
+const cellClass = (count: number): string =>
+  count === 0
+    ? 'border-dashed border-edge bg-surface text-body-subtle'
+    : count === 1
+      ? 'border-edge bg-amber-50 dark:bg-amber-950/40'
+      : 'border-edge bg-accent-soft';
+
+const description = `MITRE ATT&CK coverage of the Sigma rule catalog: ${coveredTechniques} of ${totalTechniques} enterprise techniques (ATT&CK v${matrix.version}) have at least one rule.`;
+---
+
+<BaseLayout title="MITRE ATT&CK Coverage" description={description} path="/mitre/">
+  <header class="mb-6">
+    <h1 class="text-2xl font-bold text-body sm:text-3xl">MITRE ATT&amp;CK coverage</h1>
+    <p class="mt-2 max-w-3xl text-body-muted">
+      Rules in this catalog reference {coveredTechniques} of the {totalTechniques} enterprise
+      techniques in ATT&amp;CK v{matrix.version}. Coverage reflects rule tags only — it does not claim
+      complete detection coverage of any technique.
+    </p>
+    <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-body-muted" aria-label="Legend">
+      <li><span class="mr-1.5 inline-block h-3 w-3 rounded border border-dashed border-edge-strong bg-surface align-middle"></span>no rules</li>
+      <li><span class="mr-1.5 inline-block h-3 w-3 rounded border border-edge bg-amber-50 align-middle dark:bg-amber-950/40"></span>1 rule</li>
+      <li><span class="mr-1.5 inline-block h-3 w-3 rounded border border-edge bg-accent-soft align-middle"></span>2+ rules</li>
+    </ul>
+  </header>
+
+  <div class="space-y-8">
+    {
+      matrix.tactics.map((tactic) => {
+        const techniqueCount = tactic.techniques.filter((t) => (counts.get(t.id) ?? 0) > 0).length;
+        return (
+          <section aria-labelledby={`tactic-${tactic.slug}`}>
+            <h2 id={`tactic-${tactic.slug}`} class="mb-3 text-lg font-semibold text-body">
+              {tactic.name}
+              <span class="ml-2 text-sm font-normal text-body-subtle">
+                {techniqueCount}/{tactic.techniques.length} techniques with rules
+              </span>
+            </h2>
+            <ul class="grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {tactic.techniques.map((technique) => {
+                const count = counts.get(technique.id) ?? 0;
+                const coveredSubs = technique.subTechniques.filter(
+                  (sub) => (counts.get(sub.id) ?? 0) > 0,
+                );
+                return (
+                  <li class:list={['rounded-lg border p-3 text-sm', cellClass(count)]}>
+                    <div class="flex items-start justify-between gap-2">
+                      <span class="font-medium text-body">{technique.name}</span>
+                      <code class="font-mono text-xs text-body-subtle">{technique.id}</code>
+                    </div>
+                    <p class="mt-1 text-xs">
+                      {count === 0 ? (
+                        <span>No rules</span>
+                      ) : (
+                        <a
+                          href={href(libraryPath({ technique: technique.id }))}
+                          class="text-link hover:underline"
+                        >
+                          {count} rule{count === 1 ? '' : 's'} →
+                        </a>
+                      )}
+                    </p>
+                    {coveredSubs.length > 0 && (
+                      <ul class="mt-2 space-y-0.5 border-t border-edge pt-2 text-xs">
+                        {coveredSubs.map((sub) => (
+                          <li class="flex items-center justify-between gap-2">
+                            <span class="truncate text-body-muted">{sub.name}</span>
+                            <a
+                              href={href(libraryPath({ technique: sub.id }))}
+                              class="whitespace-nowrap font-mono text-link hover:underline"
+                              title={`${sub.id}: ${counts.get(sub.id)} rules`}
+                            >
+                              {sub.id} ({counts.get(sub.id)})
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })
+    }
+  </div>
+
+  {
+    unknownReferenced.length > 0 && (
+      <section aria-labelledby="unknown-heading" class="mt-10">
+        <h2 id="unknown-heading" class="mb-2 text-lg font-semibold text-body">
+          Referenced techniques outside ATT&amp;CK v{matrix.version}
+        </h2>
+        <p class="mb-3 max-w-3xl text-sm text-body-muted">
+          These technique IDs appear in rule tags but are not part of the current enterprise matrix
+          (usually deprecated or revoked techniques).
+        </p>
+        <div class="flex flex-wrap gap-1.5">
+          {unknownReferenced.map((id) => (
+            <a
+              href={href(libraryPath({ technique: id }))}
+              class="rounded-full border border-edge bg-surface-muted px-2 py-0.5 font-mono text-xs text-body-muted hover:text-link"
+            >
+              {id} ({counts.get(id)})
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>

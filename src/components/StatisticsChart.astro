@@ -1,0 +1,53 @@
+---
+/**
+ * Accessible horizontal bar chart: every bar is a real text row
+ * (label + count), so the data is readable without interpreting the visual
+ * (SPEC §10/§12). Optionally links each label to a pre-filtered library search.
+ */
+import { href } from '../lib/site';
+import { libraryPath } from '../lib/urls';
+
+interface Props {
+  title: string;
+  entries: [string, number][];
+  /** Library filter key to link each label to, e.g. "level". */
+  filterKey?: string;
+  limit?: number;
+}
+const { title, entries, filterKey, limit = 15 } = Astro.props;
+const shown = entries.slice(0, limit);
+const max = Math.max(1, ...shown.map(([, count]) => count));
+const omitted = entries.length - shown.length;
+---
+
+<figure class="rounded-lg border border-edge bg-surface-elevated p-4">
+  <figcaption class="mb-3 font-semibold text-body">{title}</figcaption>
+  <ol class="list-none space-y-1.5 p-0">
+    {
+      shown.map(([label, count]) => (
+        <li class="grid grid-cols-[minmax(6rem,14rem)_1fr_auto] items-center gap-2 text-sm">
+          {filterKey && label !== 'unknown' ? (
+            <a
+              href={href(libraryPath({ [filterKey]: label }))}
+              class="truncate text-link hover:underline"
+              title={label}
+            >
+              {label}
+            </a>
+          ) : (
+            <span class="truncate text-body-muted" title={label}>
+              {label}
+            </span>
+          )}
+          <span
+            aria-hidden="true"
+            class="h-3 min-w-[2px] rounded-sm bg-accent/70"
+            style={`width: ${Math.round((count / max) * 100)}%`}
+          ></span>
+          <span class="font-mono text-xs text-body-muted">{count.toLocaleString('en-US')}</span>
+        </li>
+      ))
+    }
+  </ol>
+  {omitted > 0 && <p class="mt-2 text-xs text-body-subtle">+ {omitted} more not shown</p>}
+</figure>

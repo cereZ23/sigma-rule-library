@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import stats from '../generated/stats.json';
+import indexUrl from '../generated/library-index.json?url';
+import { BASE_PATH } from '../lib/site';
+
+const description = `Search and filter ${stats.totalRules.toLocaleString('en-US')} community-maintained Sigma detection rules by product, log source, severity, status and MITRE ATT&CK.`;
+---
+
+<BaseLayout title="Rule Library" description={description} path="/library/">
+  <div id="library-app" data-index-url={indexUrl} data-base={BASE_PATH}>
+    <header class="mb-6">
+      <h1 class="text-2xl font-bold text-body sm:text-3xl">Rule Library</h1>
+      <p class="mt-1 text-body-muted">
+        Search across titles, descriptions, IDs, authors, tags, ATT&amp;CK techniques, log sources and
+        detection values. Filters combine, and the URL always reflects your current search.
+      </p>
+    </header>
+
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <label for="library-search" class="sr-only">Search rules</label>
+      <input
+        id="library-search"
+        type="search"
+        placeholder="Search rules, e.g. powershell, T1059, lsass…"
+        class="min-w-0 flex-1 rounded-lg border border-edge bg-surface-elevated px-4 py-2.5 text-body placeholder:text-body-subtle"
+        autocomplete="off"
+      />
+      <label for="library-sort" class="sr-only">Sort results</label>
+      <select
+        id="library-sort"
+        class="rounded-lg border border-edge bg-surface-elevated px-3 py-2.5 text-sm text-body"
+      ></select>
+      <button
+        id="filters-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="filter-panel"
+        class="rounded-lg border border-edge bg-surface-elevated px-4 py-2.5 text-sm font-medium text-body hover:bg-surface-muted lg:hidden"
+      >
+        Filters
+      </button>
+    </div>
+
+    <p id="result-count" role="status" aria-live="polite" class="mb-4 text-sm text-body-muted"></p>
+    <p id="library-status" class="mb-4 text-sm text-body-muted">
+      Loading rule index…
+      <noscript>This page requires JavaScript for search and filtering.</noscript>
+    </p>
+
+    <div class="grid gap-8 lg:grid-cols-[16rem_1fr]">
+      <aside
+        id="filter-panel"
+        class="fixed inset-0 z-50 hidden overflow-y-auto bg-surface p-4 data-open:block lg:static lg:z-auto lg:block lg:overflow-visible lg:bg-transparent lg:p-0"
+        aria-label="Filters"
+      >
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-body-subtle">Filters</h2>
+          <div class="flex items-center gap-2">
+            <button id="clear-filters" type="button" class="text-sm text-link hover:underline">
+              Clear filters
+            </button>
+            <button
+              id="filters-close"
+              type="button"
+              class="rounded-md border border-edge px-2 py-1 text-sm text-body lg:hidden"
+              aria-label="Close filters"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <form id="filter-form" aria-label="Filter groups"></form>
+      </aside>
+
+      <section aria-label="Search results" class="min-w-0">
+        <ul id="results-list" class="grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3"></ul>
+        <nav id="pagination" aria-label="Pagination" class="mt-6 flex items-center justify-center gap-3"></nav>
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { initLibraryApp } from '../scripts/library-app';
+  initLibraryApp(document.querySelector<HTMLElement>('#library-app')!);
+</script>

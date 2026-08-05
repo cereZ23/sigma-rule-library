@@ -1,0 +1,47 @@
+---
+/**
+ * Raw YAML view (SPEC §8): the original file content, completely unmodified,
+ * with syntax highlighting, line numbers (CSS counters on Shiki's .line
+ * spans) and horizontal scroll. Copy/Download read the exact text back from
+ * the rendered code element, which preserves the source byte-for-byte.
+ */
+import { Code } from 'astro:components';
+import CopyButton from './CopyButton.astro';
+
+interface Props {
+  rawYaml: string;
+  fileName: string;
+}
+const { rawYaml, fileName } = Astro.props;
+---
+
+<section aria-labelledby="raw-yaml-heading">
+  <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h3 id="raw-yaml-heading" class="text-lg font-semibold text-body">Raw YAML</h3>
+    <div class="flex gap-2">
+      <CopyButton label="Copy" sourceSelector="#raw-yaml-code" />
+      <button
+        type="button"
+        data-download-yaml
+        data-download-name={fileName}
+        class="inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-muted"
+      >
+        <svg
+          aria-hidden="true"
+          class="h-3.5 w-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+        </svg>
+        Download
+      </button>
+    </div>
+  </div>
+  <div id="raw-yaml-code" class="yaml-viewer overflow-hidden rounded-lg border border-edge">
+    <Code code={rawYaml} lang="yaml" themes={{ light: 'github-light', dark: 'github-dark' }} />
+  </div>
+</section>

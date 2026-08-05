@@ -1,0 +1,54 @@
+name: Sync with SigmaHQ
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - name: Compare upstream commit with deployed catalog
+        id: compare
+        env:
+          SITE_URL_OVERRIDE: ${{ vars.PUBLIC_SITE_URL }}
+          BASE_PATH_OVERRIDE: ${{ vars.PUBLIC_BASE_PATH }}
+        run: |
+          UPSTREAM="$(git ls-remote https://github.com/SigmaHQ/sigma.git refs/heads/master | cut -f1)"
+          echo "Upstream SigmaHQ commit: $UPSTREAM"
+
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          SITE_URL="${SITE_URL_OVERRIDE:-https://${GITHUB_REPOSITORY_OWNER}.github.io}"
+          if [ -n "$BASE_PATH_OVERRIDE" ]; then
+            BASE_PATH="$BASE_PATH_OVERRIDE"
+          elif [ "$REPO_NAME" = "${GITHUB_REPOSITORY_OWNER}.github.io" ]; then
+            BASE_PATH=""
+          else
+            BASE_PATH="/$REPO_NAME"
+          fi
+
+          DEPLOYED="$(curl -fsSL "${SITE_URL}${BASE_PATH}/source-metadata.json" | jq -r '.commit' || echo 'unknown')"
+          echo "Deployed catalog commit: $DEPLOYED"
+
+          if [ "$UPSTREAM" != "$DEPLOYED" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Catalog is stale — a rebuild will be triggered." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Catalog already matches SigmaHQ@${UPSTREAM:0:12} — nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  rebuild:
+    needs: check-upstream
+    if: needs.check-upstream.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml

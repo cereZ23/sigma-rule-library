@@ -1,0 +1,39 @@
+---
+/**
+ * Button that copies text to the clipboard. The text comes either from the
+ * `text` prop (small values) or from the element referenced by `sourceSelector`
+ * (its textContent, e.g. a rendered code block).
+ */
+interface Props {
+  label: string;
+  text?: string;
+  sourceSelector?: string;
+  class?: string;
+}
+const { label, text, sourceSelector, class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  data-copy-button
+  data-copy-text={text}
+  data-copy-source={sourceSelector}
+  class:list={[
+    'inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-muted',
+    className,
+  ]}
+>
+  <svg
+    aria-hidden="true"
+    class="h-3.5 w-3.5"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  >
+    <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+    <path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
+  </svg>
+  <span data-copy-label>{label}</span>
+</button>

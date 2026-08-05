@@ -1,0 +1,132 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatisticsChart from '../components/StatisticsChart.astro';
+import stats from '../generated/stats.json';
+import importErrorsJson from '../generated/import-errors.json';
+import type { ImportErrorsReport } from '../lib/reports';
+
+const importErrors = importErrorsJson as unknown as ImportErrorsReport;
+
+const description = `Aggregate statistics for ${stats.totalRules.toLocaleString('en-US')} Sigma rules: severity, status, products, log sources, authors, MITRE techniques and yearly activity.`;
+
+const asEntries = (record: Record<string, number>): [string, number][] => Object.entries(record);
+
+const headline = [
+  { label: 'Total rules', value: stats.totalRules.toLocaleString('en-US') },
+  { label: 'Products', value: String(stats.distinctProducts) },
+  { label: 'ATT&CK techniques', value: String(stats.distinctTechniques) },
+  { label: 'Authors', value: String(stats.distinctAuthors) },
+  { label: 'Files not imported', value: String(stats.failedFiles) },
+  { label: 'Source commit', value: stats.sourceCommit.slice(0, 12), mono: true },
+];
+
+const shownErrors = importErrors.errors.slice(0, 50);
+---
+
+<BaseLayout title="Statistics" description={description} path="/statistics/">
+  <header class="mb-6">
+    <h1 class="text-2xl font-bold text-body sm:text-3xl">Catalog statistics</h1>
+    <p class="mt-1 text-body-muted">
+      Generated at build time from <span class="font-mono">{stats.sourceRepo}</span> (branch
+      <span class="font-mono">{stats.sourceBranch}</span>), last synced {stats.syncedAt.slice(0, 10)}.
+    </p>
+  </header>
+
+  <dl class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    {
+      headline.map((item) => (
+        <div class="rounded-lg border border-edge bg-surface-elevated p-3">
+          <dd class:list={['text-xl font-bold text-body', item.mono && 'break-all font-mono text-sm']}>
+            {item.value}
+          </dd>
+          <dt class="mt-1 text-xs text-body-subtle">{item.label}</dt>
+        </div>
+      ))
+    }
+  </dl>
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <StatisticsChart title="Rules by level" entries={asEntries(stats.byLevel)} filterKey="level" />
+    <StatisticsChart title="Rules by status" entries={asEntries(stats.byStatus)} filterKey="status" />
+    <StatisticsChart title="Rules by product" entries={asEntries(stats.byProduct)} filterKey="product" />
+    <StatisticsChart
+      title="Rules by logsource category"
+      entries={asEntries(stats.byCategory)}
+      filterKey="category"
+    />
+    <StatisticsChart
+      title="Rules by repository section"
+      entries={asEntries(stats.bySection)}
+      filterKey="section"
+    />
+    <StatisticsChart title="Rules by rule type" entries={asEntries(stats.byRuleType)} filterKey="ruleType" />
+    <StatisticsChart title="Top authors" entries={stats.topAuthors as [string, number][]} filterKey="author" />
+    <StatisticsChart
+      title="Top MITRE ATT&CK techniques"
+      entries={stats.topTechniques as [string, number][]}
+      filterKey="technique"
+    />
+    <StatisticsChart
+      title="Rules created per year"
+      entries={asEntries(stats.createdByYear)}
+      filterKey="yearCreated"
+      limit={30}
+    />
+    <StatisticsChart
+      title="Rules modified per year"
+      entries={asEntries(stats.modifiedByYear)}
+      filterKey="yearModified"
+      limit={30}
+    />
+  </div>
+
+  <section aria-labelledby="import-errors-heading" class="mt-10">
+    <h2 id="import-errors-heading" class="mb-2 text-lg font-semibold text-body">Import errors</h2>
+    {
+      importErrors.errors.length === 0 ? (
+        <p class="text-sm text-body-muted">
+          All {importErrors.totalFiles.toLocaleString('en-US')} rule files were imported without
+          errors from commit <span class="font-mono">{stats.sourceCommit.slice(0, 12)}</span>.
+        </p>
+      ) : (
+        <div class="overflow-x-auto rounded-lg border border-edge">
+          <table class="w-full min-w-[36rem] text-left text-sm">
+            <caption class="sr-only">Files that failed to import and the reason</caption>
+            <thead class="bg-surface-muted text-xs uppercase tracking-wide text-body-subtle">
+              <tr>
+                <th scope="col" class="px-3 py-2">
+                  File
+                </th>
+                <th scope="col" class="px-3 py-2">
+                  Reason
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {shownErrors.map((error) => (
+                <tr class="border-t border-edge">
+                  <td class="px-3 py-2 font-mono text-xs">{error.file}</td>
+                  <td class="px-3 py-2 text-body-muted">{error.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {importErrors.errors.length > shownErrors.length && (
+            <p class="border-t border-edge px-3 py-2 text-xs text-body-subtle">
+              Showing {shownErrors.length} of {importErrors.errors.length} errors — the full report is
+              generated as import-errors.json during the build.
+            </p>
+          )}
+        </div>
+      )
+    }
+    {
+      importErrors.duplicateIds.length > 0 && (
+        <p class="mt-3 text-sm text-body-muted">
+          {importErrors.duplicateIds.length} duplicate Sigma ID
+          {importErrors.duplicateIds.length === 1 ? '' : 's'} detected across the catalog.
+        </p>
+      )
+    }
+  </section>
+</BaseLayout>

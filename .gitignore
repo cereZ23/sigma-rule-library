@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+
+# Sigma source cache (shallow clone, fetched at build time)
+.cache/
+
+# generated catalog data (built by `npm run data`)
+src/generated/*.json
+public/source-metadata.json
+
+# environment
+.env
+.env.production
+
+# misc
+.DS_Store
+npm-debug.log*

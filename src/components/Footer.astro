@@ -1,0 +1,44 @@
+---
+import metadata from '../generated/source-metadata.json';
+import { GITHUB_REPOSITORY, SITE_NAME, href } from '../lib/site';
+
+const commitShort = metadata.commit.slice(0, 12);
+const syncedDate = metadata.syncedAt.slice(0, 10);
+---
+
+<footer class="border-t border-edge bg-surface-muted/50">
+  <div class="mx-auto max-w-6xl space-y-3 px-4 py-8 text-sm text-body-muted sm:px-6">
+    <p>
+      {SITE_NAME} is an independent community interface for exploring rules from the
+      <a
+        href="https://github.com/SigmaHQ/sigma"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-link underline decoration-edge-strong underline-offset-2 hover:decoration-current"
+        >SigmaHQ repository</a
+      >. It is not affiliated with or endorsed by SigmaHQ.
+    </p>
+    <p>
+      Rules belong to their respective authors and are distributed under the
+      <a
+        href={`https://github.com/${metadata.repo}/blob/${metadata.commit}/LICENSE.Detection.Rules.md`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-link underline decoration-edge-strong underline-offset-2 hover:decoration-current"
+        >Detection Rule License</a
+      > of the SigmaHQ repository.
+    </p>
+    <p class="font-mono text-xs text-body-subtle">
+      Catalog source: {metadata.repo}@{commitShort} · branch {metadata.branch} · last sync {syncedDate}
+    </p>
+    <p class="text-xs">
+      <a href={href('/about/')} class="text-link hover:underline">About</a> ·
+      <a
+        href={`https://github.com/${GITHUB_REPOSITORY}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-link hover:underline">Site source code</a
+      > (MIT)
+    </p>
+  </div>
+</footer>

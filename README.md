@@ -1,5 +1,7 @@
 # Sigma Rule Library
 
+**Live site: <https://cerez23.github.io/sigma-rule-library/>**
+
 A fast, fully static web interface for exploring the community-maintained
 [Sigma](https://github.com/SigmaHQ/sigma) detection rules: search, filter by
 platform / log source / severity / MITRE ATT&CK, read the detection logic, and

@@ -107,20 +107,36 @@ body {
 }
 .yaml-viewer code {
   display: block;
-  min-width: max-content;
   counter-reset: line;
   font-family: var(--font-mono);
 }
+/* Default: soft-wrap long lines with a hanging indent under the line number,
+   so nothing is ever cut off. The .nowrap variant switches back to a single
+   horizontally scrollable line per row. */
 .yaml-viewer code .line {
   counter-increment: line;
   display: inline-block;
   min-width: 100%;
+  padding-inline-start: 4rem;
   padding-inline-end: 1rem;
+  text-indent: -4rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.yaml-viewer.nowrap code {
+  min-width: max-content;
+}
+.yaml-viewer.nowrap code .line {
+  padding-inline-start: 0;
+  text-indent: 0;
+  white-space: pre;
 }
 .yaml-viewer code .line::before {
   content: counter(line);
   display: inline-block;
-  width: 3rem;
+  /* border-box (preflight): 4rem total = 3rem number column + 1rem gap,
+     matching the 4rem hanging indent of wrapped lines */
+  width: 4rem;
   padding-inline-end: 1rem;
   text-align: right;
   color: var(--sl-fg-subtle);

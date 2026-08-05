@@ -19,6 +19,15 @@ const { rawYaml, fileName } = Astro.props;
   <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
     <h3 id="raw-yaml-heading" class="text-lg font-semibold text-body">Raw YAML</h3>
     <div class="flex gap-2">
+      <button
+        type="button"
+        data-wrap-toggle="#raw-yaml-code"
+        aria-pressed="true"
+        class="inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-muted"
+        title="Toggle soft-wrapping of long lines"
+      >
+        <span data-wrap-label>Wrap: on</span>
+      </button>
       <CopyButton label="Copy" sourceSelector="#raw-yaml-code" />
       <button
         type="button"

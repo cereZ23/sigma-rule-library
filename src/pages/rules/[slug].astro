@@ -131,6 +131,67 @@ const jsonLd = {
     </div>
   </header>
 
+  <dl
+    aria-label="Rule overview"
+    class="mb-8 grid gap-x-6 gap-y-4 rounded-lg border border-edge bg-surface-elevated p-4 sm:grid-cols-2 lg:grid-cols-4"
+  >
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Log source</dt>
+      <dd class="mt-1 text-sm text-body">
+        {
+          [rule.logsource.product, rule.logsource.service, rule.logsource.category].filter(Boolean)
+            .length > 0
+            ? [rule.logsource.product, rule.logsource.service, rule.logsource.category]
+                .filter(Boolean)
+                .join(' · ')
+            : 'Not specified'
+        }
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">MITRE ATT&amp;CK</dt>
+      <dd class="mt-1 text-sm text-body">
+        {
+          rule.mitreTechniques.length > 0 || rule.mitreSubTechniques.length > 0 ? (
+            <span class="font-mono">
+              {[
+                ...rule.mitreSubTechniques,
+                ...rule.mitreTechniques.filter(
+                  (t) => !rule.mitreSubTechniques.some((s) => s.startsWith(t)),
+                ),
+              ]
+                .slice(0, 4)
+                .join(', ')}
+            </span>
+          ) : (
+            'No mapping'
+          )
+        }
+        {
+          rule.mitreTactics.length > 0 && (
+            <span class="block text-xs text-body-muted">
+              {rule.mitreTactics.map((t) => t.replace(/-/g, ' ')).join(', ')}
+            </span>
+          )
+        }
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Author</dt>
+      <dd class="mt-1 text-sm text-body">
+        {rule.author.length > 0 ? rule.author.slice(0, 2).join(', ') : 'Unknown'}
+        {rule.author.length > 2 && <span class="text-body-subtle"> +{rule.author.length - 2}</span>}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Dates</dt>
+      <dd class="mt-1 text-sm text-body">
+        {rule.date ? `Created ${rule.date}` : 'No creation date'}
+        {rule.modified && <span class="block text-xs text-body-muted">Modified {rule.modified}</span>}
+      </dd>
+    </div>
+  </dl>
+
   <div class="grid gap-8 lg:grid-cols-[1fr_20rem]">
     <div class="min-w-0 space-y-8">
       <section aria-labelledby="detection-heading">

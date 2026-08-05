@@ -30,6 +30,17 @@ document.addEventListener('click', (event) => {
     return;
   }
 
+  const wrapToggle = target.closest<HTMLButtonElement>('[data-wrap-toggle]');
+  if (wrapToggle) {
+    const block = document.querySelector(wrapToggle.dataset.wrapToggle ?? '');
+    if (!block) return;
+    const nowrap = block.classList.toggle('nowrap');
+    wrapToggle.setAttribute('aria-pressed', String(!nowrap));
+    const label = wrapToggle.querySelector('[data-wrap-label]');
+    if (label) label.textContent = nowrap ? 'Wrap: off' : 'Wrap: on';
+    return;
+  }
+
   const copyButton = target.closest<HTMLButtonElement>('[data-copy-button]');
   if (copyButton) {
     const selector = copyButton.dataset.copySource;

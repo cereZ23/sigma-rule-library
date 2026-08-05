@@ -10,8 +10,6 @@ copy or download the original YAML.
 > Sigma Rule Library is an independent community interface for exploring rules
 > from the SigmaHQ repository. It is not affiliated with or endorsed by SigmaHQ.
 
-![Screenshot placeholder — library page with search and filters](docs/screenshot-library.png)
-
 ## Features
 
 - **Full catalog import**: ~3,800 rules from `rules/`, `rules-threat-hunting/`,

@@ -104,6 +104,20 @@ body {
   font-size: 0.8125rem;
   line-height: 1.6;
   tab-size: 2;
+  /* Always-visible horizontal scrollbar: macOS overlay scrollbars made long
+     lines look silently cut off. Styling the scrollbar forces it visible. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-border-strong) transparent;
+}
+.yaml-viewer pre::-webkit-scrollbar {
+  height: 8px;
+}
+.yaml-viewer pre::-webkit-scrollbar-thumb {
+  background: var(--sl-border-strong);
+  border-radius: 4px;
+}
+.yaml-viewer pre::-webkit-scrollbar-track {
+  background: transparent;
 }
 .yaml-viewer code {
   display: block;

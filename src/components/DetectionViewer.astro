@@ -7,6 +7,7 @@
  */
 import { stringify } from 'yaml';
 import { Code } from 'astro:components';
+import { indentWrapTransformer } from '../lib/shiki';
 
 interface Props {
   detection: unknown;
@@ -53,7 +54,7 @@ const shikiThemes = { light: 'github-light', dark: 'github-dark' } as const;
       <section>
         <h4 class="mb-1.5 font-mono text-sm font-semibold text-body">{key}</h4>
         <div class="yaml-viewer overflow-hidden rounded-lg border border-edge">
-          <Code code={yaml} lang="yaml" themes={shikiThemes} />
+          <Code code={yaml} lang="yaml" themes={shikiThemes} transformers={[indentWrapTransformer]} />
         </div>
       </section>
     ))

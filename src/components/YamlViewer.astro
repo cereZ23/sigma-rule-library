@@ -7,6 +7,7 @@
  */
 import { Code } from 'astro:components';
 import CopyButton from './CopyButton.astro';
+import { indentWrapTransformer } from '../lib/shiki';
 
 interface Props {
   rawYaml: string;
@@ -51,6 +52,11 @@ const { rawYaml, fileName } = Astro.props;
     </div>
   </div>
   <div id="raw-yaml-code" class="yaml-viewer overflow-hidden rounded-lg border border-edge">
-    <Code code={rawYaml} lang="yaml" themes={{ light: 'github-light', dark: 'github-dark' }} />
+    <Code
+      code={rawYaml}
+      lang="yaml"
+      themes={{ light: 'github-light', dark: 'github-dark' }}
+      transformers={[indentWrapTransformer]}
+    />
   </div>
 </section>

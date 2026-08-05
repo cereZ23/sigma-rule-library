@@ -117,9 +117,11 @@ body {
   counter-increment: line;
   display: inline-block;
   min-width: 100%;
-  padding-inline-start: 4rem;
+  /* wrapped continuations align with the line's own indentation
+     (--indent is set per line by the Shiki indent-wrap transformer) */
+  padding-inline-start: calc(4rem + var(--indent, 0ch));
   padding-inline-end: 1rem;
-  text-indent: -4rem;
+  text-indent: calc(-4rem - var(--indent, 0ch));
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

@@ -2,9 +2,31 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import stats from '../generated/stats.json';
 import indexUrl from '../generated/library-index.json?url';
-import { BASE_PATH } from '../lib/site';
+import indexData from '../generated/library-index.json';
+import type { LibraryRecord } from '../lib/library-types';
+import { sortRecords } from '../lib/search';
+import { BASE_PATH, href } from '../lib/site';
+import { rulePath } from '../lib/urls';
 
 const description = `Search and filter ${stats.totalRules.toLocaleString('en-US')} community-maintained Sigma detection rules by product, log source, severity, status and MITRE ATT&CK.`;
+
+// Progressive enhancement: the first page of results is prerendered at build
+// time (default sort: recently modified), so the library is useful before —
+// or without — JavaScript. The client app replaces this list once the search
+// index loads. Card markup must stay in sync with ruleCard() in
+// src/scripts/library-app.ts.
+const initialRecords = sortRecords(indexData as LibraryRecord[], 'modified').slice(0, 24);
+const totalCount = (indexData as LibraryRecord[]).length;
+
+const LEVEL_BADGE: Record<string, string> = {
+  critical: 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-300',
+  high: 'bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-300',
+  medium: 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300',
+  low: 'bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-300',
+  informational: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+};
+const badgeClass = (extra: string) =>
+  `inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${extra}`;
 ---
 
 <BaseLayout title="Rule Library" description={description} path="/library/">
@@ -42,10 +64,14 @@ const description = `Search and filter ${stats.totalRules.toLocaleString('en-US'
       </button>
     </div>
 
-    <p id="result-count" role="status" aria-live="polite" class="mb-4 text-sm text-body-muted"></p>
+    <p id="result-count" role="status" aria-live="polite" class="mb-4 text-sm text-body-muted">
+      {totalCount.toLocaleString('en-US')} rules found
+    </p>
     <p id="library-status" class="mb-4 text-sm text-body-muted">
-      Loading rule index…
-      <noscript>This page requires JavaScript for search and filtering.</noscript>
+      <noscript>
+        JavaScript is disabled: showing the {initialRecords.length} most recently modified rules.
+        Search and filters require JavaScript.
+      </noscript>
     </p>
 
     <div class="grid gap-8 lg:grid-cols-[16rem_1fr]">
@@ -74,7 +100,64 @@ const description = `Search and filter ${stats.totalRules.toLocaleString('en-US'
       </aside>
 
       <section aria-label="Search results" class="min-w-0">
-        <ul id="results-list" class="grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3"></ul>
+        <ul id="results-list" class="grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+          {
+            initialRecords.map((record) => (
+              <li>
+                <a
+                  href={href(rulePath(record.slug))}
+                  class="block h-full rounded-lg border border-edge bg-surface-elevated p-4 transition-colors hover:border-edge-strong"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <h3 class="font-medium leading-snug text-body">{record.title}</h3>
+                    <span
+                      class={badgeClass(
+                        LEVEL_BADGE[record.level] ?? 'bg-surface-muted text-body-muted',
+                      )}
+                    >
+                      {record.level}
+                    </span>
+                  </div>
+                  {record.description && (
+                    <p class="mt-1.5 line-clamp-2 text-sm text-body-muted">{record.description}</p>
+                  )}
+                  <div class="mt-3 flex flex-wrap gap-1.5">
+                    <span class={badgeClass('bg-surface-muted text-body-muted')}>{record.status}</span>
+                    {record.product && (
+                      <span class={badgeClass('bg-accent-soft text-link')}>{record.product}</span>
+                    )}
+                    {(record.service ?? record.category) && (
+                      <span class={badgeClass('bg-accent-soft text-link')}>
+                        {record.service ?? record.category}
+                      </span>
+                    )}
+                    {record.techniques
+                      .filter((t) => !t.includes('.'))
+                      .slice(0, 3)
+                      .map((technique) => (
+                        <span class={badgeClass('bg-surface-muted font-mono text-body-muted')}>
+                          {technique}
+                        </span>
+                      ))}
+                    <span class={badgeClass('bg-surface-muted text-body-muted')}>{record.section}</span>
+                  </div>
+                  {(record.authors.length > 0 || record.modified) && (
+                    <p class="mt-2 text-xs text-body-subtle">
+                      {[
+                        record.authors.length > 0
+                          ? record.authors[0] + (record.authors.length > 1 ? ' et al.' : '')
+                          : null,
+                        record.modified ? `modified ${record.modified}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  )}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
         <nav id="pagination" aria-label="Pagination" class="mt-6 flex items-center justify-center gap-3"></nav>
       </section>
     </div>

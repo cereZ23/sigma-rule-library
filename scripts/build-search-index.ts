@@ -3,6 +3,7 @@
  * Contains only what cards, filters and search need — never rawYaml or the
  * full detection object, which stay build-side in rules.json.
  */
+import { gzipSync } from 'node:zlib';
 import type { SigmaRule } from '../src/lib/sigma';
 import type { LibraryRecord } from '../src/lib/library-types';
 import { LIBRARY_INDEX_JSON, RULES_JSON, readJson, writeJson } from './util';
@@ -43,7 +44,10 @@ const records: LibraryRecord[] = rules.map((rule) => ({
 }));
 
 writeJson(LIBRARY_INDEX_JSON, records);
-const bytes = JSON.stringify(records).length;
+const raw = JSON.stringify(records);
+const gzipped = gzipSync(Buffer.from(raw)).length;
 console.log(
-  `[build-search-index] ${records.length} records, ~${(bytes / 1024 / 1024).toFixed(1)} MB uncompressed`,
+  `[build-search-index] ${records.length} records, ` +
+    `${(raw.length / 1024 / 1024).toFixed(1)} MB raw / ${(gzipped / 1024 / 1024).toFixed(2)} MB gzip ` +
+    `(~${Math.round(gzipped / records.length)} B/record over the wire)`,
 );

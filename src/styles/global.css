@@ -99,6 +99,10 @@ body {
 /* Shiki code blocks: line numbers via CSS counters, horizontal scroll */
 .yaml-viewer pre {
   overflow-x: auto;
+  /* Cap the height so the horizontal scrollbar at the bottom of the block
+     stays on screen even for long rules; the block scrolls vertically. */
+  max-height: 75vh;
+  overflow-y: auto;
   padding: 1rem 0;
   border-radius: 0.5rem;
   font-size: 0.8125rem;

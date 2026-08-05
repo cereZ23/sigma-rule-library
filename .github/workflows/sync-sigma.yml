@@ -24,7 +24,8 @@ jobs:
           echo "Upstream SigmaHQ commit: $UPSTREAM"
 
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          SITE_URL="${SITE_URL_OVERRIDE:-https://${GITHUB_REPOSITORY_OWNER}.github.io}"
+          OWNER_LC="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          SITE_URL="${SITE_URL_OVERRIDE:-https://${OWNER_LC}.github.io}"
           if [ -n "$BASE_PATH_OVERRIDE" ]; then
             BASE_PATH="$BASE_PATH_OVERRIDE"
           elif [ "$REPO_NAME" = "${GITHUB_REPOSITORY_OWNER}.github.io" ]; then

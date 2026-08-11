@@ -2,8 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import matrix from '../data/attack-matrix.json';
 import { href } from '../lib/site';
-import { libraryPath } from '../lib/urls';
 import type { SigmaRule } from '../lib/sigma';
+import { techniquePath } from '../lib/taxonomy';
 
 const { default: rules } = (await import('../generated/rules.json')) as { default: SigmaRule[] };
 
@@ -167,7 +167,7 @@ const description = `MITRE ATT&CK coverage of the Sigma rule catalog: ${coveredT
                         <span>No rules</span>
                       ) : (
                         <a
-                          href={href(libraryPath({ technique: technique.id }))}
+                          href={href(techniquePath(technique.id))}
                           class="text-link hover:underline"
                         >
                           {count} rule{count === 1 ? '' : 's'} →
@@ -180,7 +180,7 @@ const description = `MITRE ATT&CK coverage of the Sigma rule catalog: ${coveredT
                           <li class="flex items-center justify-between gap-2">
                             <span class="truncate text-body-muted">{sub.name}</span>
                             <a
-                              href={href(libraryPath({ technique: sub.id }))}
+                              href={href(techniquePath(sub.id))}
                               class="whitespace-nowrap font-mono text-link hover:underline"
                               title={`${sub.id}: ${counts.get(sub.id)} rules`}
                             >
@@ -213,7 +213,7 @@ const description = `MITRE ATT&CK coverage of the Sigma rule catalog: ${coveredT
         <div class="flex flex-wrap gap-1.5">
           {unknownReferenced.map((id) => (
             <a
-              href={href(libraryPath({ technique: id }))}
+              href={href(techniquePath(id))}
               class="rounded-full border border-edge bg-surface-muted px-2 py-0.5 font-mono text-xs text-body-muted hover:text-link"
             >
               {id} ({counts.get(id)})

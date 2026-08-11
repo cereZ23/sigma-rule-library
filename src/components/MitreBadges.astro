@@ -2,6 +2,7 @@
 import { mitreTechniqueUrl, tacticDisplayName } from '../lib/mitre';
 import { href } from '../lib/site';
 import { libraryPath } from '../lib/urls';
+import { techniquePath } from '../lib/taxonomy';
 
 interface Props {
   tactics: string[];
@@ -53,7 +54,7 @@ const hasAny = tactics.length > 0 || techniques.length > 0 || subTechniques.leng
               {id}
             </a>
             <a
-              href={href(libraryPath({ technique: id }))}
+              href={href(techniquePath(id))}
               class="text-xs text-body-subtle hover:text-link hover:underline"
             >
               browse rules

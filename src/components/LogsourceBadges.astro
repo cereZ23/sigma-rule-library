@@ -1,26 +1,37 @@
 ---
 import Badge from './Badge.astro';
+import { href } from '../lib/site';
+import { logsourcePath, productPath } from '../lib/taxonomy';
 import type { SigmaLogsource } from '../lib/sigma';
 
 interface Props {
   logsource: SigmaLogsource;
 }
 const { logsource } = Astro.props;
-const entries = [
-  ['product', logsource.product],
-  ['service', logsource.service],
-  ['category', logsource.category],
-] as const;
+
+// product and category link to their taxonomy landing pages; service has none
+const entries: { key: string; value?: string; to?: string }[] = [
+  { key: 'product', value: logsource.product, to: logsource.product ? productPath(logsource.product) : undefined },
+  { key: 'service', value: logsource.service },
+  { key: 'category', value: logsource.category, to: logsource.category ? logsourcePath(logsource.category) : undefined },
+];
+const shown = entries.filter((entry) => entry.value);
 ---
 
 <div class="space-y-2">
   <div class="flex flex-wrap gap-1.5">
     {
-      entries
-        .filter(([, value]) => value)
-        .map(([key, value]) => <Badge label={`${key}: ${value}`} kind="accent" />)
+      shown.map((entry) =>
+        entry.to ? (
+          <a href={href(entry.to)} class="rounded-full focus-visible:outline-none">
+            <Badge label={`${entry.key}: ${entry.value}`} kind="accent" />
+          </a>
+        ) : (
+          <Badge label={`${entry.key}: ${entry.value}`} kind="accent" />
+        ),
+      )
     }
-    {entries.every(([, value]) => !value) && <span class="text-sm text-body-subtle">Not specified</span>}
+    {shown.length === 0 && <span class="text-sm text-body-subtle">Not specified</span>}
   </div>
   {
     logsource.definition && (

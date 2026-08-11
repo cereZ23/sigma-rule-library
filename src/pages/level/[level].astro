@@ -1,0 +1,88 @@
+---
+import RuleCollection from '../../components/RuleCollection.astro';
+import { href } from '../../lib/site';
+import type { SigmaRule } from '../../lib/sigma';
+import {
+  groupBySlug,
+  productPath,
+  logsourcePath,
+  sortForListing,
+  toCard,
+  topValues,
+} from '../../lib/taxonomy';
+
+export async function getStaticPaths() {
+  const LEVEL_BLURB: Record<string, string> = {
+    critical:
+      'Critical rules flag activity that is almost always malicious and warrants immediate response.',
+    high: 'High-severity rules flag suspicious activity that usually deserves prompt investigation.',
+    medium: 'Medium-severity rules surface activity worth reviewing in context.',
+    low: 'Low-severity rules capture weak or noisy signals, useful for correlation and hunting.',
+    informational:
+      'Informational rules record baseline or context events rather than direct threats.',
+  };
+
+  const { default: rules } = (await import('../../generated/rules.json')) as {
+    default: SigmaRule[];
+  };
+  const groups = groupBySlug(rules, (r) => r.level);
+
+  return [...groups.entries()].map(([slug, { display, rules: groupRules }]) => {
+    const sorted = sortForListing(groupRules);
+    const products = topValues(sorted, (r) => r.logsource.product);
+    const categories = topValues(sorted, (r) => r.logsource.category);
+
+    const title = `${display[0]!.toUpperCase()}${display.slice(1)}-severity Sigma rules`;
+    const blurb = LEVEL_BLURB[slug] ?? `Rules classified with ${display} severity.`;
+    const intro =
+      `${sorted.length} community-maintained Sigma detection rule${sorted.length === 1 ? '' : 's'} ` +
+      `in the library are classified as ${display} severity. ${blurb} ` +
+      (products.length
+        ? `Coverage spans ${products.slice(0, 3).map(([p]) => p).join(', ')}. `
+        : '') +
+      `Open a rule to read its detection logic, MITRE ATT&CK mapping and original YAML.`;
+    const description = `${sorted.length} ${display}-severity Sigma detection rules. Detection logic, ATT&CK mapping and original YAML.`;
+
+    return {
+      params: { level: slug },
+      props: {
+        title,
+        path: `/level/${slug}/`,
+        description: description.slice(0, 160),
+        intro,
+        cards: sorted.map((rule) => toCard(rule, rule.logsource.category ?? undefined)),
+        related: [
+          {
+            heading: 'Products',
+            links: products.map(([product, count]) => ({
+              label: product,
+              href: href(productPath(product)),
+              count,
+            })),
+          },
+          {
+            heading: 'Log sources',
+            links: categories.map(([category, count]) => ({
+              label: category,
+              href: href(logsourcePath(category)),
+              count,
+            })),
+          },
+        ].filter((group) => group.links.length > 0),
+      },
+    };
+  });
+}
+
+const { title, path, description, intro, cards, related } = Astro.props;
+---
+
+<RuleCollection
+  kind="Severity level"
+  title={title}
+  path={path}
+  description={description}
+  intro={intro}
+  rules={cards}
+  related={related}
+/>

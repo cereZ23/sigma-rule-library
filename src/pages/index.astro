@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import RuleCard from '../components/RuleCard.astro';
 import stats from '../generated/stats.json';
 import { SITE_NAME, canonical, href } from '../lib/site';
-import { libraryPath } from '../lib/urls';
+import { logsourcePath, productPath, techniquePath } from '../lib/taxonomy';
 
 const description =
   'Explore, search and understand community-maintained Sigma detection rules from the SigmaHQ repository. Filter by platform, log source, severity and MITRE ATT&CK.';
@@ -16,6 +16,10 @@ const counters = [
 ];
 
 const topCategories = Object.entries(stats.byCategory as Record<string, number>)
+  .filter(([name]) => name !== 'unknown')
+  .slice(0, 8);
+
+const topProducts = Object.entries(stats.byProduct as Record<string, number>)
   .filter(([name]) => name !== 'unknown')
   .slice(0, 8);
 
@@ -88,6 +92,25 @@ const jsonLd = {
   </section>
 
   {
+    topProducts.length > 0 && (
+      <section aria-labelledby="platforms-heading" class="py-8">
+        <h2 id="platforms-heading" class="mb-4 text-xl font-semibold text-body">Browse by platform</h2>
+        <div class="flex flex-wrap gap-2">
+          {topProducts.map(([product, count]) => (
+            <a
+              href={href(productPath(product))}
+              class="inline-flex items-center gap-2 rounded-full border border-edge bg-surface-elevated px-4 py-1.5 text-sm text-body hover:border-edge-strong"
+            >
+              <span class="font-mono">{product}</span>
+              <span class="text-xs text-body-subtle">{count}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
     topCategories.length > 0 && (
       <section aria-labelledby="categories-heading" class="py-8">
         <h2 id="categories-heading" class="mb-4 text-xl font-semibold text-body">
@@ -96,7 +119,7 @@ const jsonLd = {
         <div class="flex flex-wrap gap-2">
           {topCategories.map(([category, count]) => (
             <a
-              href={href(libraryPath({ category }))}
+              href={href(logsourcePath(category))}
               class="inline-flex items-center gap-2 rounded-full border border-edge bg-surface-elevated px-4 py-1.5 text-sm text-body hover:border-edge-strong"
             >
               <span class="font-mono">{category}</span>
@@ -122,6 +145,41 @@ const jsonLd = {
           />
         ))
       }
+    </div>
+  </section>
+
+  <section aria-labelledby="about-heading" class="border-t border-edge py-8">
+    <div class="max-w-3xl space-y-6">
+      <div>
+        <h2 id="about-heading" class="mb-2 text-xl font-semibold text-body">
+          What is the Sigma Rule Library?
+        </h2>
+        <p class="text-body-muted">
+          Sigma Rule Library provides a searchable interface for exploring community-maintained Sigma
+          detection rules from the
+          <a
+            href="https://github.com/SigmaHQ/sigma"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-link underline decoration-edge-strong underline-offset-2">SigmaHQ repository</a
+          >. Security analysts, detection engineers and threat hunters can browse rules by operating
+          system, log source, severity, MITRE ATT&amp;CK technique and rule status. Each rule page
+          includes the original Sigma YAML, detection logic, metadata, references, false positives and
+          links to related detections.
+        </p>
+      </div>
+      <div>
+        <h2 class="mb-2 text-xl font-semibold text-body">Explore Sigma detections</h2>
+        <p class="text-body-muted">
+          Browse
+          <a href={href(productPath('windows'))} class="text-link hover:underline">Windows</a>,
+          <a href={href(productPath('linux'))} class="text-link hover:underline">Linux</a>, cloud,
+          network and application detections, search by ATT&amp;CK technique such as
+          <a href={href(techniquePath('T1059'))} class="text-link hover:underline">T1059</a> or
+          <a href={href(techniquePath('T1003'))} class="text-link hover:underline">T1003</a>, and
+          inspect the original rule before using it in your detection engineering workflow.
+        </p>
+      </div>
     </div>
   </section>
 </BaseLayout>

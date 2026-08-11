@@ -1,0 +1,118 @@
+---
+import RuleCollection from '../../components/RuleCollection.astro';
+import matrix from '../../data/attack-matrix.json';
+import { mitreTechniqueUrl, tacticDisplayName } from '../../lib/mitre';
+import { href } from '../../lib/site';
+import { libraryPath } from '../../lib/urls';
+import type { SigmaRule } from '../../lib/sigma';
+import {
+  baseTechnique,
+  productPath,
+  sortForListing,
+  toCard,
+  topValues,
+} from '../../lib/taxonomy';
+
+export async function getStaticPaths() {
+  const { default: rules } = (await import('../../generated/rules.json')) as {
+    default: SigmaRule[];
+  };
+
+  // Name + tactic lookup from the vendored ATT&CK matrix
+  const nameOf = new Map<string, string>();
+  const tacticOf = new Map<string, string>();
+  for (const tactic of matrix.tactics) {
+    for (const technique of tactic.techniques) {
+      nameOf.set(technique.id, technique.name);
+      if (!tacticOf.has(technique.id)) tacticOf.set(technique.id, tactic.slug);
+      for (const sub of technique.subTechniques) nameOf.set(sub.id, sub.name);
+    }
+  }
+
+  // Bucket rules under their base technique (T1059 collects T1059 + T1059.00x)
+  const buckets = new Map<string, SigmaRule[]>();
+  for (const rule of rules) {
+    const bases = new Set(
+      [...rule.mitreTechniques, ...rule.mitreSubTechniques].map(baseTechnique),
+    );
+    for (const base of bases) {
+      const list = buckets.get(base);
+      if (list) list.push(rule);
+      else buckets.set(base, [rule]);
+    }
+  }
+
+  return [...buckets.entries()].map(([id, bucketRules]) => {
+    const sorted = sortForListing(bucketRules);
+    const name = nameOf.get(id);
+    const tacticSlug = tacticOf.get(id);
+    const products = topValues(sorted, (r) => r.logsource.product);
+
+    const title = name ? `${name} detection rules` : `${id} detection rules`;
+    const tacticPhrase = tacticSlug ? ` in the ${tacticDisplayName(tacticSlug)} tactic` : '';
+    const knownPhrase = name
+      ? `${name} (${id}) is a MITRE ATT&CK technique${tacticPhrase}.`
+      : `${id} is a MITRE ATT&CK technique referenced by Sigma rules (not part of the current enterprise matrix, usually deprecated).`;
+    const productPhrase = products.length
+      ? ` These rules mainly target ${products.slice(0, 3).map(([p]) => p).join(', ')}.`
+      : '';
+    const intro =
+      `${knownPhrase} This page lists the ${sorted.length} community-maintained Sigma detection ` +
+      `rule${sorted.length === 1 ? '' : 's'} in the library mapped to ${id} and its sub-techniques. ` +
+      `Each rule includes its detection logic, log source, false positives and original YAML.${productPhrase}`;
+    const description = name
+      ? `${sorted.length} Sigma detection rules for MITRE ATT&CK ${id} — ${name}. Browse detection logic and original YAML.`
+      : `${sorted.length} Sigma detection rules mapped to MITRE ATT&CK technique ${id}.`;
+
+    const related = [
+      {
+        heading: 'Top products',
+        links: products.map(([product, count]) => ({
+          label: product,
+          href: href(productPath(product)),
+          count,
+        })),
+      },
+    ];
+    if (tacticSlug) {
+      related.push({
+        heading: 'Tactic',
+        links: [
+          {
+            label: tacticDisplayName(tacticSlug),
+            href: href(libraryPath({ tactic: tacticSlug })),
+            count: undefined as unknown as number,
+          },
+        ],
+      });
+    }
+
+    return {
+      params: { technique: id },
+      props: {
+        title,
+        code: id,
+        description: description.slice(0, 160),
+        intro,
+        externalLink: { href: mitreTechniqueUrl(id), label: `${id} on attack.mitre.org` },
+        cards: sorted.map((rule) => toCard(rule, rule.logsource.category ?? undefined)),
+        related: related.filter((group) => group.links.length > 0),
+      },
+    };
+  });
+}
+
+const { title, code, description, intro, externalLink, cards, related } = Astro.props;
+---
+
+<RuleCollection
+  kind="MITRE ATT&CK technique"
+  title={title}
+  code={code}
+  path={`/mitre/${code}/`}
+  description={description}
+  intro={intro}
+  externalLink={externalLink}
+  rules={cards}
+  related={related}
+/>

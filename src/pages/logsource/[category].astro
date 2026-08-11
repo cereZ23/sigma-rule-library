@@ -1,0 +1,78 @@
+---
+import RuleCollection from '../../components/RuleCollection.astro';
+import { href } from '../../lib/site';
+import type { SigmaRule } from '../../lib/sigma';
+import {
+  groupBySlug,
+  productPath,
+  levelPath,
+  sortForListing,
+  toCard,
+  topValues,
+} from '../../lib/taxonomy';
+
+export async function getStaticPaths() {
+  const { default: rules } = (await import('../../generated/rules.json')) as {
+    default: SigmaRule[];
+  };
+  const groups = groupBySlug(rules, (r) => r.logsource.category);
+
+  return [...groups.entries()].map(([slug, { display, rules: groupRules }]) => {
+    const sorted = sortForListing(groupRules);
+    const products = topValues(sorted, (r) => r.logsource.product);
+    const levels = topValues(sorted, (r) => r.level);
+
+    const title = `${display} log source Sigma rules`;
+    const intro =
+      `${sorted.length} Sigma detection rule${sorted.length === 1 ? '' : 's'} in the library use the ` +
+      `${display} log source` +
+      (products.length
+        ? `, mostly on ${products.slice(0, 3).map(([p]) => p).join(', ')}.`
+        : '.') +
+      ` The ${display} category groups related telemetry so you can find detections that consume the ` +
+      `same events. Open a rule to read its detection logic, MITRE ATT&CK mapping and original YAML.`;
+    const description = `${sorted.length} Sigma detection rules using the ${display} log source. Detection logic, ATT&CK mapping and original YAML.`;
+
+    return {
+      params: { category: slug },
+      props: {
+        title,
+        path: `/logsource/${slug}/`,
+        description: description.slice(0, 160),
+        intro,
+        cards: sorted.map((rule) => toCard(rule, rule.logsource.service ?? undefined)),
+        related: [
+          {
+            heading: 'Products',
+            links: products.map(([product, count]) => ({
+              label: product,
+              href: href(productPath(product)),
+              count,
+            })),
+          },
+          {
+            heading: 'Severity',
+            links: levels.map(([level, count]) => ({
+              label: level,
+              href: href(levelPath(level)),
+              count,
+            })),
+          },
+        ].filter((group) => group.links.length > 0),
+      },
+    };
+  });
+}
+
+const { title, path, description, intro, cards, related } = Astro.props;
+---
+
+<RuleCollection
+  kind="Log source category"
+  title={title}
+  path={path}
+  description={description}
+  intro={intro}
+  rules={cards}
+  related={related}
+/>

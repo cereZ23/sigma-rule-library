@@ -14,6 +14,7 @@ import type { SigmaRule } from '../../lib/sigma';
 import { buildSimilarityIndex, similarRules, type SimilarRule } from '../../lib/similar';
 import { SITE_NAME, canonical, href } from '../../lib/site';
 import { rulePath } from '../../lib/urls';
+import { levelPath } from '../../lib/taxonomy';
 
 export async function getStaticPaths() {
   const { default: rules } = (await import('../../generated/rules.json')) as {
@@ -225,11 +226,15 @@ const jsonLd = {
     >
       <section aria-label="Severity and status">
         <div class="flex flex-wrap gap-1.5">
-          <Badge
-            label={`level: ${rule.level ?? 'unknown'}`}
-            kind="level"
-            value={rule.level ?? 'unknown'}
-          />
+          {
+            rule.level ? (
+              <a href={href(levelPath(rule.level))} class="rounded-full">
+                <Badge label={`level: ${rule.level}`} kind="level" value={rule.level} />
+              </a>
+            ) : (
+              <Badge label="level: unknown" kind="level" value="unknown" />
+            )
+          }
           <Badge
             label={`status: ${rule.status ?? 'unknown'}`}
             kind="status"

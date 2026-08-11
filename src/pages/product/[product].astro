@@ -1,0 +1,80 @@
+---
+import RuleCollection from '../../components/RuleCollection.astro';
+import { href } from '../../lib/site';
+import type { SigmaRule } from '../../lib/sigma';
+import {
+  groupBySlug,
+  logsourcePath,
+  levelPath,
+  sortForListing,
+  toCard,
+  topValues,
+} from '../../lib/taxonomy';
+
+export async function getStaticPaths() {
+  const { default: rules } = (await import('../../generated/rules.json')) as {
+    default: SigmaRule[];
+  };
+  const groups = groupBySlug(rules, (r) => r.logsource.product);
+
+  return [...groups.entries()].map(([slug, { display, rules: groupRules }]) => {
+    const sorted = sortForListing(groupRules);
+    const categories = topValues(sorted, (r) => r.logsource.category);
+    const levels = topValues(sorted, (r) => r.level);
+
+    const title = `${display} Sigma detection rules`;
+    const intro =
+      `${sorted.length} community-maintained Sigma detection rule${sorted.length === 1 ? '' : 's'} ` +
+      `in the library target the ${display} platform` +
+      (categories.length
+        ? `, covering log sources such as ${categories.slice(0, 4).map(([c]) => c).join(', ')}.`
+        : '.') +
+      ` Browse by severity, inspect the detection logic and MITRE ATT&CK mapping, and open the ` +
+      `original Sigma YAML before using a rule in your detection engineering workflow.`;
+    const description = `${sorted.length} Sigma detection rules for ${display}: process creation, network, file and more. Detection logic and original YAML.`;
+
+    return {
+      params: { product: slug },
+      props: {
+        title,
+        path: `/product/${slug}/`,
+        description: description.slice(0, 160),
+        intro,
+        cards: sorted.map((rule) =>
+          toCard(rule, rule.logsource.service ?? rule.logsource.category ?? undefined),
+        ),
+        related: [
+          {
+            heading: 'Log sources',
+            links: categories.map(([category, count]) => ({
+              label: category,
+              href: href(logsourcePath(category)),
+              count,
+            })),
+          },
+          {
+            heading: 'Severity',
+            links: levels.map(([level, count]) => ({
+              label: level,
+              href: href(levelPath(level)),
+              count,
+            })),
+          },
+        ].filter((group) => group.links.length > 0),
+      },
+    };
+  });
+}
+
+const { title, path, description, intro, cards, related } = Astro.props;
+---
+
+<RuleCollection
+  kind="Platform / product"
+  title={title}
+  path={path}
+  description={description}
+  intro={intro}
+  rules={cards}
+  related={related}
+/>

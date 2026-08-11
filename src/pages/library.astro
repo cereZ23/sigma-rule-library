@@ -7,6 +7,7 @@ import type { LibraryRecord } from '../lib/library-types';
 import { sortRecords } from '../lib/search';
 import { BASE_PATH, href } from '../lib/site';
 import { rulePath } from '../lib/urls';
+import { levelPath, logsourcePath, productPath } from '../lib/taxonomy';
 
 const description = `Search and filter ${stats.totalRules.toLocaleString('en-US')} community-maintained Sigma detection rules by product, log source, severity, status and MITRE ATT&CK.`;
 
@@ -162,6 +163,39 @@ const badgeClass = (extra: string) =>
       </section>
     </div>
   </div>
+
+  <section aria-labelledby="library-about-heading" class="mt-12 border-t border-edge pt-8">
+    <div class="max-w-3xl space-y-4">
+      <h2 id="library-about-heading" class="text-xl font-semibold text-body">
+        About the Sigma rule library
+      </h2>
+      <p class="text-body-muted">
+        This library indexes {stats.totalRules.toLocaleString('en-US')} community-maintained Sigma
+        detection rules from the
+        <a
+          href="https://github.com/SigmaHQ/sigma"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-link underline decoration-edge-strong underline-offset-2">SigmaHQ repository</a
+        >. Use the search box to match a rule by title, description, author, tag, MITRE ATT&amp;CK
+        technique ID, log source or detection value, then narrow the results with the combinable
+        filters for product, service, log source category, severity, status, ATT&amp;CK tactic and
+        technique, author and year. Every search and filter is reflected in the page URL, so a query
+        can be bookmarked or shared with your team.
+      </p>
+      <p class="text-body-muted">
+        Prefer to browse? Jump to a
+        <a href={href(productPath('windows'))} class="text-link hover:underline">platform</a>, a
+        <a href={href(logsourcePath('process_creation'))} class="text-link hover:underline"
+          >log source</a
+        >, a <a href={href(levelPath('critical'))} class="text-link hover:underline">severity level</a>
+        or a specific
+        <a href={href('/mitre/')} class="text-link hover:underline">MITRE ATT&amp;CK technique</a>.
+        Each rule opens on a dedicated page with its detection logic, ATT&amp;CK mapping, false
+        positives, references, related rules and the original Sigma YAML ready to copy or download.
+      </p>
+    </div>
+  </section>
 </BaseLayout>
 
 <script>

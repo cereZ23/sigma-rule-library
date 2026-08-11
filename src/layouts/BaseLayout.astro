@@ -46,6 +46,18 @@ const csp = [
     <link rel="canonical" href={canonicalHref} />
     <link rel="icon" type="image/svg+xml" href={href('/favicon.svg')} />
     <link rel="sitemap" href={href('/sitemap-index.xml')} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Sigma Rule Library — recently updated rules"
+      href={href('/feed.xml')}
+    />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Sigma Rule Library — recent critical rules"
+      href={href('/feed-critical.xml')}
+    />
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={fullTitle} />

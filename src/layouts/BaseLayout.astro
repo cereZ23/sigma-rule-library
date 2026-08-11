@@ -16,7 +16,18 @@ interface Props {
 }
 
 const { title, description, path, ogType = 'website', jsonLd } = Astro.props;
-const fullTitle = path === '/' ? `${SITE_NAME} — Sigma detection rules explorer` : `${title} — ${SITE_NAME}`;
+
+// Keep <title> under ~70 chars (search engines truncate longer). The rule/page
+// title carries the keywords, so drop the brand suffix before truncating it.
+const TITLE_MAX = 70;
+function buildTitle(): string {
+  if (path === '/') return `${SITE_NAME} — Sigma detection rules explorer`;
+  const withBrand = `${title} — ${SITE_NAME}`;
+  if (withBrand.length <= TITLE_MAX) return withBrand;
+  if (title.length <= TITLE_MAX) return title;
+  return `${title.slice(0, TITLE_MAX - 1).trimEnd()}…`;
+}
+const fullTitle = buildTitle();
 const canonicalHref = canonical(path);
 
 // GitHub Pages cannot set response headers, so the CSP ships as a meta tag.
